@@ -6,7 +6,6 @@ import time
 import wandb
 
 from options import *
-from config import *
 
 from train import train
 from losses import LossComputer
@@ -24,33 +23,53 @@ if __name__ == "__main__":
     args = parse_args()
     if args.debug:
         pdb.set_trace()
-    
-    config = Config(args)
-    worker_init_fn = None
-    gpus = [0]
-    torch.cuda.set_device('cuda:{}'.format(gpus[0]))
-    if config.seed >= 0:
-        utils.set_seed(config.seed)
-        worker_init_fn = np.random.seed(config.seed)
 
-    config.len_feature = 1024
-    net = WSAD(config.len_feature, flag = "Train", a_nums = 60, n_nums = 60)
+    args.log_path = os.path.join(args.log_path, time_ymd, 'ucf', args.version)
+    args.model_path = os.path.join(args.model_path, time_ymd, 'ucf', args.version)
+    if not os.path.exists(args.log_path):
+        os.makedirs(args.log_path)
+    if not os.path.exists(args.model_path):
+        os.makedirs(args.model_path)
+    
+    wandb.init(
+        project="BN-WVAD",
+        name=args.version,
+        config={
+            'optimization:lr': args.lr[0],
+            'optimization:iters': args.num_iters,
+            'dataset:dataset': 'xd-violence',
+            'model:kernel_sizes': args.kernel_sizes,
+            'model:channel_ratios': args.ratios,
+            'triplet_loss:abn_ratio_sample': args.ratio_sample,
+            'triplet_loss:abn_ratio_batch': args.ratio_batch,
+        },
+        settings=wandb.Settings(code_dir=os.path.dirname(os.path.abspath(__file__))),
+        save_code=True,
+    )
+
+    worker_init_fn = None
+
+    if args.seed >= 0:
+        utils.set_seed(args.seed)
+        worker_init_fn = np.random.seed(args.seed)
+    
+    net = WSAD(args.len_feature,flag = "Train", args=args)
     net = net.cuda()
 
     normal_train_loader = data.DataLoader(
-        UCF_crime(root_dir = config.root_dir, mode = 'Train', modal = config.modal, num_segments = 200, len_feature = config.len_feature, is_normal = True),
-            batch_size = 64,
-            shuffle = True, num_workers = config.num_workers,
+        UCF_crime(root_dir = args.root_dir, mode = 'Train', num_segments = args.num_segments, len_feature = args.len_feature, is_normal = True),
+            batch_size = args.batch_size,
+            shuffle = True, num_workers = args.num_workers,
             worker_init_fn = worker_init_fn, drop_last = True)
     abnormal_train_loader = data.DataLoader(
-        UCF_crime(root_dir = config.root_dir, mode = 'Train', modal = config.modal, num_segments = 200, len_feature = config.len_feature, is_normal = False),
-            batch_size = 64,
-            shuffle = True, num_workers = config.num_workers,
+        UCF_crime(root_dir = args.root_dir, mode='Train', num_segments = args.num_segments, len_feature = args.len_feature, is_normal = False),
+            batch_size = args.batch_size,
+            shuffle = True, num_workers = args.num_workers,
             worker_init_fn = worker_init_fn, drop_last = True)
     test_loader = data.DataLoader(
-        UCF_crime(root_dir = config.root_dir, mode = 'Test', modal = config.modal, num_segments = config.num_segments, len_feature = config.len_feature),
-            batch_size = 1,
-            shuffle = False, num_workers = config.num_workers,
+        UCF_crime(root_dir = args.root_dir, mode = 'Test', num_segments = args.num_segments, len_feature = args.len_feature),
+            batch_size = 5,
+            shuffle = False, num_workers = args.num_workers,
             worker_init_fn = worker_init_fn)
 
     test_info = {'step': [], 'AUC': [], 'AP': []}
@@ -94,3 +113,6 @@ if __name__ == "__main__":
             for n, v in metric.items():
                 best_name = 'best_' + n
                 best_scores[best_name] = v if v > best_scores[best_name] else best_scores[best_name]
+
+        wandb.log(metric, step=step)
+        wandb.log(best_scores, step=step)
