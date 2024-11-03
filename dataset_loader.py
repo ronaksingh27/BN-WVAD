@@ -5,11 +5,10 @@ import numpy as np
 import utils 
 
 class UCF_crime(data.DataLoader):
-    def __init__(self, root_dir, modal, mode, num_segments, len_feature, seed=-1, is_normal=None):
+    def __init__(self, root_dir, mode, num_segments, len_feature, seed=-1, is_normal=None):
         if seed >= 0:
             utils.set_seed(seed)
         self.mode = mode
-        self.modal = modal
         self.num_segments = num_segments
         self.len_feature = len_feature
         split_path = os.path.join('list','UCF_{}.list'.format(self.mode))
