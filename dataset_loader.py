@@ -41,7 +41,12 @@ class UCF_crime(data.DataLoader):
     def get_data(self, index):
         vid_info = self.vid_list[index][0]  
         name = vid_info.split("/")[-1].split("_x264")[0]
-        video_feature = np.load(vid_info).astype(np.float32)   
+
+        try:
+            video_feature = np.load(vid_info).astype(np.float32) 
+        except FileNotFoundError:
+             print(f"Warning: File {vid_info} not found. Skipping this entry.")
+             return None, None  # Return None or handle it appropriately
 
         if "Normal" in vid_info.split("/")[-1]:
             label = 0
