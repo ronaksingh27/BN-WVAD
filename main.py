@@ -24,8 +24,8 @@ if __name__ == "__main__":
     if args.debug:
         pdb.set_trace()
 
-    args.log_path = os.path.join(args.log_path, time_ymd, 'xd', args.version)
-    args.model_path = os.path.join(args.model_path, time_ymd, 'xd', args.version)
+    args.log_path = os.path.join(args.log_path, time_ymd, 'ucf', args.version)
+    args.model_path = os.path.join(args.model_path, time_ymd, 'ucf', args.version)
     if not os.path.exists(args.log_path):
         os.makedirs(args.log_path)
     if not os.path.exists(args.model_path):
