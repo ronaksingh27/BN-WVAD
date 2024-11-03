@@ -30,13 +30,12 @@ class UCF_crime(data.DataLoader):
         return len(self.vid_list)
 
     def __getitem__(self, index):
-        
         if self.mode == "Test":
-            data,label,name = self.get_data(index)
-            return data,label,name
+            data, label, name = self.get_data(index)
+            return data, label, name
         else:
-            data,label = self.get_data(index)
-            return data,label
+            data, label = self.get_data(index)
+            return data, label
 
     def get_data(self, index):
         vid_info = self.vid_list[index][0]  
